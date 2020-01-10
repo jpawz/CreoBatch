@@ -9,7 +9,6 @@ Actions:
 #include <ProCore.h>
 #include <ProMenuBar.h>
 #include <ProMessage.h>
-#include <ProPDF.h>
 #include <ProUICmd.h>
 #include <ProUIDialog.h>
 #include <ProUIPushbutton.h>
@@ -17,6 +16,7 @@ Actions:
 #include <ProUtil.h>
 #include <ProWindows.h>
 #include <ProWstring.h>
+#include <ProPDF.h>
 #include <vector>
 
 using namespace std;
@@ -257,7 +257,6 @@ void exportToDxfAction(char* dialog, char* component, ProAppData data)
 
 void exportToStpAction(char* dialog, char* component, ProAppData data)
 {
-	parseTextArea();
 }
 
 void parseTextArea()

@@ -1,0 +1,12 @@
+Creo Batch
+Creo Batch
+
+
+summary success
+Koniec.
+
+
+summary with errors
+Koniec. Nie wyeksportowano: [ %0w ]
+
+
