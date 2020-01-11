@@ -99,7 +99,7 @@ void makeDialogWindow()
 	ProUIDialogTextareaAdd(dialogName, textArea, &gridOpts);
 	ProUITextareaMaxlenSet(dialogName, textArea, textAreaLength);
 	ProUITextareaActivateActionSet(dialogName, textArea, textAction, NULL);
-	ProUITextareaHelptextSet(dialogName, textArea, (wchar_t*)L"Numery rozdielone spacjami, przecinkami, kropkami, średnikami lub w nowych wierszach. \nNumery krótsze niz 3 znaki są ignorowane.");
+	ProUITextareaHelptextSet(dialogName, textArea, (wchar_t*)L"Numery rozdzielone spacjami, przecinkami, kropkami, średnikami lub w nowych wierszach. \nNumery krótsze niż 4 znaki są ignorowane.");
 
 	gridOpts.horz_cells = 1;
 	gridOpts.vert_cells = 1;
