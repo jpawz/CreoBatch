@@ -99,6 +99,7 @@ void makeDialogWindow()
 	ProUIDialogTextareaAdd(dialogName, textArea, &gridOpts);
 	ProUITextareaMaxlenSet(dialogName, textArea, textAreaLength);
 	ProUITextareaActivateActionSet(dialogName, textArea, textAction, NULL);
+	ProUITextareaHelptextSet(dialogName, textArea, (wchar_t*)L"Numery rozdielone spacjami, przecinkami, kropkami, średnikami lub w nowych wierszach. \nNumery krótsze niz 3 znaki są ignorowane.");
 
 	gridOpts.horz_cells = 1;
 	gridOpts.vert_cells = 1;
@@ -119,18 +120,21 @@ void makeDialogWindow()
 	ProStringToWstring(label[0], exportToPdf);
 	ProUIPushbuttonTextSet(dialogName, exportToPdf, label[0]);
 	ProUIPushbuttonActivateActionSet(dialogName, exportToPdf, exportToPdfAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, exportToPdf, (wchar_t*)L"zapisze rysunki do plikow PDF w katalogu roboczym");
 
 	gridOpts.row = 4;
 	ProUIDialogPushbuttonAdd(dialogName, exportToDxf, &gridOpts);
 	ProStringToWstring(label[0], exportToDxf);
 	ProUIPushbuttonTextSet(dialogName, exportToDxf, label[0]);
 	ProUIPushbuttonActivateActionSet(dialogName, exportToDxf, exportToDxfAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, exportToDxf, (wchar_t*)L"zapisze rysunki do plikow DXF w katalogu roboczym");
 
 	gridOpts.row = 5;
 	ProUIDialogPushbuttonAdd(dialogName, exportToTiff, &gridOpts);
 	ProStringToWstring(label[0], exportToTiff);
 	ProUIPushbuttonTextSet(dialogName, exportToTiff, label[0]);
 	ProUIPushbuttonActivateActionSet(dialogName, exportToTiff, exportToTiffAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, exportToTiff, (wchar_t*)L"zapisze rysunki do plikow TIFF w katalogu roboczym");
 
 	ProUIDialogActivate(dialogName, &exit_status);
 	ProUIDialogDestroy(dialogName);
