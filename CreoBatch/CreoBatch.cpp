@@ -31,8 +31,8 @@ void parseTextArea();
 void cancelAction(char*, char*, ProAppData);
 void exportToPdfAction(char*, char*, ProAppData);
 void exportToDxfAction(char*, char*, ProAppData);
-void exportToStpAction(char*, char*, ProAppData);
-void export2dDrawing(ProImportExportFile, wstring);
+void exportToTiffAction(char*, char*, ProAppData);
+void export2dDrawing(ProImportExportFile importExportFile);
 void textAction(char*, char*, ProAppData);
 
 ProFileName msgFile;
@@ -41,7 +41,7 @@ char separator[] = { "Separator" };
 char cancel[] = { "Cancel" };
 char exportToPdf[] = { "Eksport do PDF" };
 char exportToDxf[] = { "Eksport do DXF" };
-char exportToStp[] = { "Eksport do STP" };
+char exportToTiff[] = { "Eksport do TIFF" };
 char textArea[] = { "TextArea" };
 
 vector<wchar_t*> numbers;
@@ -126,10 +126,10 @@ void makeDialogWindow()
 	ProUIPushbuttonActivateActionSet(dialogName, exportToDxf, exportToDxfAction, NULL);
 
 	gridOpts.row = 5;
-	ProUIDialogPushbuttonAdd(dialogName, exportToStp, &gridOpts);
-	ProStringToWstring(label[0], exportToStp);
-	ProUIPushbuttonTextSet(dialogName, exportToStp, label[0]);
-	ProUIPushbuttonActivateActionSet(dialogName, exportToStp, exportToStpAction, NULL);
+	ProUIDialogPushbuttonAdd(dialogName, exportToTiff, &gridOpts);
+	ProStringToWstring(label[0], exportToTiff);
+	ProUIPushbuttonTextSet(dialogName, exportToTiff, label[0]);
+	ProUIPushbuttonActivateActionSet(dialogName, exportToTiff, exportToTiffAction, NULL);
 
 	ProUIDialogActivate(dialogName, &exit_status);
 	ProUIDialogDestroy(dialogName);
@@ -220,6 +220,44 @@ void exportToDxfAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
 
+	export2dDrawing(PRO_DXF_FILE);
+}
+
+void exportToTiffAction(char* dialog, char* component, ProAppData data)
+{
+	parseTextArea();
+
+	export2dDrawing(PRO_SNAP_TIFF_FILE);
+}
+
+void parseTextArea()
+{
+	numbers.clear();
+
+	wchar_t* wstr;
+	ProUITextareaValueGet(dialogName, textArea, &wstr);
+	memcpy(textAreaValue, wstr, sizeof(wchar_t) * textAreaLength);
+	ProArrayFree((ProArray*)&wstr);
+
+	wchar_t* line;
+	wchar_t* nextToken;
+	line = wcstok_s(textAreaValue, L" .,;\r\n\t", &nextToken);
+	int length = 0;
+	while (line != NULL)
+	{
+		ProWstringLengthGet(line, &length);
+		if (length > 3)
+			numbers.push_back(line);
+		line = wcstok_s(NULL, L" .,;\r\n\t", &nextToken);
+	}
+}
+
+void textAction(char* dialog, char* component, ProAppData data)
+{
+}
+
+void export2dDrawing(ProImportExportFile importExportFile)
+{
 	bool success = true;
 	ProError err = PRO_TK_NO_ERROR;
 	ProPath filenameWithPath;
@@ -241,7 +279,7 @@ void exportToDxfAction(char* dialog, char* component, ProAppData data)
 		}
 		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
 		ProWstringConcatenate((wchar_t*)L".dxf", filenameWithPath, 4);
-		Pro2dExport(PRO_DXF_FILE, filenameWithPath, drawingToExport, NULL);
+		Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
 		ProMdlErase(drawingToExport);
 	}
 	if (success)
@@ -253,34 +291,4 @@ void exportToDxfAction(char* dialog, char* component, ProAppData data)
 		notExportedNumbers.erase(notExportedNumbers.end() - 2);
 		ProMessageDisplay(msgFile, strToCharArr("summary with errors"), notExportedNumbers.c_str());
 	}
-}
-
-void exportToStpAction(char* dialog, char* component, ProAppData data)
-{
-}
-
-void parseTextArea()
-{
-	numbers.clear();
-
-	wchar_t* wstr;
-	ProUITextareaValueGet(dialogName, textArea, &wstr);
-	memcpy(textAreaValue, wstr, sizeof(wchar_t) * textAreaLength);
-	ProArrayFree((ProArray*)&wstr);
-
-	wchar_t* line;
-	wchar_t* nextToken;
-	line = wcstok_s(textAreaValue, L" .,;\r\n\t", &nextToken);
-	int length = 0;
-	while (line != NULL)
-	{
-		ProWstringLengthGet(line, &length);
-		if (length > 5)
-			numbers.push_back(line);
-		line = wcstok_s(NULL, L" .,;\r\n\t", &nextToken);
-	}
-}
-
-void textAction(char* dialog, char* component, ProAppData data)
-{
 }
