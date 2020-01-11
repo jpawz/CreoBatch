@@ -3,7 +3,7 @@ Creo batch tool.
 Actions:
 1. Convert drw to pdf
 2. Convert drw to dxf
-3. Convert prt/asm to stp
+3. Convert drw to dwg
  */
 
 #include <ProCore.h>
@@ -31,7 +31,7 @@ void parseTextArea();
 void cancelAction(char*, char*, ProAppData);
 void exportToPdfAction(char*, char*, ProAppData);
 void exportToDxfAction(char*, char*, ProAppData);
-void exportToTiffAction(char*, char*, ProAppData);
+void exportToDwgAction(char*, char*, ProAppData);
 void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
 void summary(bool, wstring);
@@ -42,7 +42,7 @@ char separator[] = { "Separator" };
 char cancel[] = { "Cancel" };
 char exportToPdf[] = { "Eksport do PDF" };
 char exportToDxf[] = { "Eksport do DXF" };
-char exportToTiff[] = { "Eksport do TIFF" };
+char exportToDwg[] = { "Eksport do DWG" };
 char textArea[] = { "TextArea" };
 
 vector<wchar_t*> numbers;
@@ -130,11 +130,11 @@ void makeDialogWindow()
 	ProUIPushbuttonHelptextSet(dialogName, exportToDxf, (wchar_t*)L"zapisze rysunki do plikow DXF w katalogu roboczym");
 
 	gridOpts.row = 5;
-	ProUIDialogPushbuttonAdd(dialogName, exportToTiff, &gridOpts);
-	ProStringToWstring(label[0], exportToTiff);
-	ProUIPushbuttonTextSet(dialogName, exportToTiff, label[0]);
-	ProUIPushbuttonActivateActionSet(dialogName, exportToTiff, exportToTiffAction, NULL);
-	ProUIPushbuttonHelptextSet(dialogName, exportToTiff, (wchar_t*)L"zapisze rysunki do plikow TIFF w katalogu roboczym");
+	ProUIDialogPushbuttonAdd(dialogName, exportToDwg, &gridOpts);
+	ProStringToWstring(label[0], exportToDwg);
+	ProUIPushbuttonTextSet(dialogName, exportToDwg, label[0]);
+	ProUIPushbuttonActivateActionSet(dialogName, exportToDwg, exportToDwgAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, exportToDwg, (wchar_t*)L"zapisze rysunki do plikow DWG w katalogu roboczym");
 
 	ProUIDialogActivate(dialogName, &exit_status);
 	ProUIDialogDestroy(dialogName);
@@ -220,11 +220,11 @@ void exportToDxfAction(char* dialog, char* component, ProAppData data)
 	export2dDrawing(PRO_DXF_FILE, (wchar_t*)L".dxf");
 }
 
-void exportToTiffAction(char* dialog, char* component, ProAppData data)
+void exportToDwgAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
 
-	export2dDrawing(PRO_SNAP_TIFF_FILE, (wchar_t*)L".tif");
+	export2dDrawing(PRO_DWG_FILE, (wchar_t*)L".dwg");
 }
 
 void parseTextArea()
