@@ -32,8 +32,9 @@ void cancelAction(char*, char*, ProAppData);
 void exportToPdfAction(char*, char*, ProAppData);
 void exportToDxfAction(char*, char*, ProAppData);
 void exportToTiffAction(char*, char*, ProAppData);
-void export2dDrawing(ProImportExportFile importExportFile);
+void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
+void summary(bool, wstring);
 
 ProFileName msgFile;
 char dialogName[] = { "creobatch" };
@@ -205,29 +206,21 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 		ProMdlErase(drawingToExport);
 	}
 	ProPDFoptionsFree(pdfOptions);
-	if (success)
-	{
-		ProMessageDisplay(msgFile, strToCharArr("summary success"));
-	}
-	else
-	{
-		notExportedNumbers.erase(notExportedNumbers.end() - 2);
-		ProMessageDisplay(msgFile, strToCharArr("summary with errors"), notExportedNumbers.c_str());
-	}
+	summary(success, notExportedNumbers);
 }
 
 void exportToDxfAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
 
-	export2dDrawing(PRO_DXF_FILE);
+	export2dDrawing(PRO_DXF_FILE, (wchar_t*)L".dxf");
 }
 
 void exportToTiffAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
 
-	export2dDrawing(PRO_SNAP_TIFF_FILE);
+	export2dDrawing(PRO_SNAP_TIFF_FILE, (wchar_t*)L".tif");
 }
 
 void parseTextArea()
@@ -256,7 +249,7 @@ void textAction(char* dialog, char* component, ProAppData data)
 {
 }
 
-void export2dDrawing(ProImportExportFile importExportFile)
+void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 {
 	bool success = true;
 	ProError err = PRO_TK_NO_ERROR;
@@ -278,17 +271,22 @@ void export2dDrawing(ProImportExportFile importExportFile)
 			continue;
 		}
 		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
-		ProWstringConcatenate((wchar_t*)L".dxf", filenameWithPath, 4);
+		ProWstringConcatenate(extension, filenameWithPath, 4);
 		Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
 		ProMdlErase(drawingToExport);
 	}
-	if (success)
+	summary(success, notExportedNumbers);
+}
+
+void summary(bool status, wstring message)
+{
+	if (status)
 	{
 		ProMessageDisplay(msgFile, strToCharArr("summary success"));
 	}
 	else
 	{
-		notExportedNumbers.erase(notExportedNumbers.end() - 2);
-		ProMessageDisplay(msgFile, strToCharArr("summary with errors"), notExportedNumbers.c_str());
+		message.erase(message.end() - 2);
+		ProMessageDisplay(msgFile, strToCharArr("summary with errors"), message.c_str());
 	}
 }
