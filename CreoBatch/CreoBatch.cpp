@@ -22,9 +22,7 @@ Actions:
 using namespace std;
 
 static uiCmdAccessState AccessAvailable(uiCmdAccessMode);
-void printMessage(string);
 void makeDialogWindow();
-char* strToCharArr(string);
 void initializeMsgFile();
 void parseTextArea();
 
@@ -140,21 +138,9 @@ void makeDialogWindow()
 	ProUIDialogDestroy(dialogName);
 }
 
-void printMessage(string message)
-{
-	ProMessageDisplay(msgFile, strToCharArr(message));
-}
-
 static uiCmdAccessState AccessAvailable(uiCmdAccessMode access_mode)
 {
 	return (ACCESS_AVAILABLE);
-}
-
-char* strToCharArr(string str)
-{
-	char* cstr = new char[str.length() + 1];
-	strcpy(cstr, str.c_str());
-	return cstr;
 }
 
 void initializeMsgFile()
@@ -286,11 +272,11 @@ void summary(bool status, wstring message)
 {
 	if (status)
 	{
-		ProMessageDisplay(msgFile, strToCharArr("summary success"));
+		ProMessageDisplay(msgFile, (char *)"summary success");
 	}
 	else
 	{
 		message.erase(message.end() - 2);
-		ProMessageDisplay(msgFile, strToCharArr("summary with errors"), message.c_str());
+		ProMessageDisplay(msgFile, (char *)"summary with errors", message.c_str());
 	}
 }
