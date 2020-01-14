@@ -11,6 +11,7 @@ Actions:
 #include <ProMessage.h>
 #include <ProUICmd.h>
 #include <ProUIDialog.h>
+#include <ProUIMessage.h>
 #include <ProUIPushbutton.h>
 #include <ProUITextarea.h>
 #include <ProUtil.h>
@@ -46,6 +47,9 @@ char textArea[] = { "TextArea" };
 vector<wchar_t*> numbers;
 const int textAreaLength = 2048;
 static wchar_t textAreaValue[textAreaLength];
+
+wstring notExportedNumbers;
+bool success = true;
 
 extern "C" int main(int argc, char** argv)
 {
@@ -157,25 +161,27 @@ void cancelAction(char* dialog, char* component, ProAppData data)
 void exportToPdfAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
-
-	bool success = true;
+	
+	success = true;
 	ProError err = PRO_TK_NO_ERROR;
 	int newWindowId;
+	int oldWindowId;
 	ProName drwName;
 	ProPath filenameWithPath;
 	ProMdl drawingToExport = NULL;
 	ProPDFOptions pdfOptions;
-	wstring notExportedNumbers;
+
 
 	ProPDFoptionsAlloc(&pdfOptions);
 	ProPDFoptionsIntpropertySet(pdfOptions, PRO_PDFOPT_COLOR_DEPTH, PRO_PDF_CD_MONO);
 	ProPDFoptionsBoolpropertySet(pdfOptions, PRO_PDFOPT_LAUNCH_VIEWER, PRO_B_FALSE);
 	ProUIDialogExit(dialogName, 0);
 
+	ProWindowCurrentGet(&oldWindowId);
+	
 	for (int i = 0; i < numbers.size(); i++)
 	{
 		int numLen = 0;
-		ProWstringLengthGet(numbers[i], &numLen);
 		ProDirectoryCurrentGet(filenameWithPath);
 		err = ProMdlRetrieve(numbers[i], PRO_MDL_DRAWING, &drawingToExport);
 		if (err != PRO_TK_NO_ERROR)
@@ -189,14 +195,43 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 		ProObjectwindowCreate(drwName, PRO_DRAWING, &newWindowId);
 		ProWindowCurrentSet(newWindowId);
 		ProWindowActivate(newWindowId);
+		ProWstringLengthGet(numbers[i], &numLen);
 		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
 		ProWstringConcatenate((wchar_t*)L".pdf", filenameWithPath, 4);
 		ProPDFExport(drawingToExport, filenameWithPath, pdfOptions);
 		ProWindowCurrentClose();
 		ProMdlErase(drawingToExport);
 	}
+	
 	ProPDFoptionsFree(pdfOptions);
-	summary(success, notExportedNumbers);
+	ProWindowActivate(oldWindowId);
+	ProUIMessageButton* buttons;
+	ProUIMessageButton userChoice;
+	ProArrayAlloc(1, sizeof(ProUIMessageButton),
+		1, (ProArray*)&buttons);
+	buttons[0] = PRO_UI_MESSAGE_OK;
+	if (success)
+	{
+		ProUIMessageDialogDisplay(PROUIMESSAGE_INFO, (wchar_t*)L"Koniec", (wchar_t*)L"Wszystkie numery zapisano.", buttons, PRO_UI_MESSAGE_OK, &userChoice);
+	}
+	else
+	{
+		wstring message = L"Tych numerów nie zapisano:\n";
+		int counter = 0;
+		for (int i = 0; i < notExportedNumbers.size() - 1; i++)
+		{
+			if ((notExportedNumbers.at(i) == L',') && (notExportedNumbers.at(i + 1) == L' '))
+			{
+				counter++;
+				if (counter % 10 == 0)
+				{
+					notExportedNumbers.replace(i, 2, L"\n");
+				}
+			}
+		}
+		message += notExportedNumbers;
+		ProUIMessageDialogDisplay(PROUIMESSAGE_WARNING, (wchar_t*)L"Błędy", (wchar_t *)message.c_str(), buttons, PRO_UI_MESSAGE_OK, &userChoice);
+	}
 }
 
 void exportToDxfAction(char* dialog, char* component, ProAppData data)
