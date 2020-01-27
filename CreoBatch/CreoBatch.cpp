@@ -33,7 +33,7 @@ void exportToDxfAction(char*, char*, ProAppData);
 void exportToDwgAction(char*, char*, ProAppData);
 void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
-void summary(bool, wstring);
+void summary(bool);
 
 ProFileName msgFile;
 char dialogName[] = { "creobatch" };
@@ -48,8 +48,8 @@ vector<wchar_t*> numbers;
 const int textAreaLength = 2048;
 static wchar_t textAreaValue[textAreaLength];
 
-wstring notExportedNumbers;
-bool success = true;
+static wstring notExportedNumbers;
+static bool success = true;
 
 extern "C" int main(int argc, char** argv)
 {
@@ -179,6 +179,8 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 
 	ProWindowCurrentGet(&oldWindowId);
 	
+	notExportedNumbers.clear();
+
 	for (int i = 0; i < numbers.size(); i++)
 	{
 		int numLen = 0;
@@ -205,33 +207,8 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 	
 	ProPDFoptionsFree(pdfOptions);
 	ProWindowActivate(oldWindowId);
-	ProUIMessageButton* buttons;
-	ProUIMessageButton userChoice;
-	ProArrayAlloc(1, sizeof(ProUIMessageButton),
-		1, (ProArray*)&buttons);
-	buttons[0] = PRO_UI_MESSAGE_OK;
-	if (success)
-	{
-		ProUIMessageDialogDisplay(PROUIMESSAGE_INFO, (wchar_t*)L"Koniec", (wchar_t*)L"Wszystkie numery zapisano.", buttons, PRO_UI_MESSAGE_OK, &userChoice);
-	}
-	else
-	{
-		wstring message = L"Tych numerów nie zapisano:\n";
-		int counter = 0;
-		for (int i = 0; i < notExportedNumbers.size() - 1; i++)
-		{
-			if ((notExportedNumbers.at(i) == L',') && (notExportedNumbers.at(i + 1) == L' '))
-			{
-				counter++;
-				if (counter % 10 == 0)
-				{
-					notExportedNumbers.replace(i, 2, L"\n");
-				}
-			}
-		}
-		message += notExportedNumbers;
-		ProUIMessageDialogDisplay(PROUIMESSAGE_WARNING, (wchar_t*)L"Błędy", (wchar_t *)message.c_str(), buttons, PRO_UI_MESSAGE_OK, &userChoice);
-	}
+
+	summary(success);
 }
 
 void exportToDxfAction(char* dialog, char* component, ProAppData data)
@@ -276,11 +253,12 @@ void textAction(char* dialog, char* component, ProAppData data)
 
 void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 {
-	bool success = true;
+	success = true;
 	ProError err = PRO_TK_NO_ERROR;
 	ProPath filenameWithPath;
 	ProMdl drawingToExport = NULL;
-	wstring notExportedNumbers;
+	
+	notExportedNumbers.clear();
 
 	for (int i = 0; i < numbers.size(); i++)
 	{
@@ -300,18 +278,36 @@ void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 		Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
 		ProMdlErase(drawingToExport);
 	}
-	summary(success, notExportedNumbers);
+	summary(success);
 }
 
-void summary(bool status, wstring message)
+void summary(bool status)
 {
+	ProUIMessageButton* buttons;
+	ProUIMessageButton userChoice;
+	ProArrayAlloc(1, sizeof(ProUIMessageButton),
+		1, (ProArray*)&buttons);
+	buttons[0] = PRO_UI_MESSAGE_OK;
 	if (status)
 	{
-		ProMessageDisplay(msgFile, (char *)"summary success");
+		ProUIMessageDialogDisplay(PROUIMESSAGE_INFO, (wchar_t*)L"Koniec", (wchar_t*)L"Wszystkie numery zapisano.", buttons, PRO_UI_MESSAGE_OK, &userChoice);
 	}
 	else
 	{
-		message.erase(message.end() - 2);
-		ProMessageDisplay(msgFile, (char *)"summary with errors", message.c_str());
+		wstring message = L"Tych numerów nie zapisano:\n";
+		int counter = 0;
+		for (int i = 0; i < notExportedNumbers.size() - 1; i++)
+		{
+			if ((notExportedNumbers.at(i) == L',') && (notExportedNumbers.at(i + 1) == L' '))
+			{
+				counter++;
+				if (counter % 10 == 0)
+				{
+					notExportedNumbers.replace(i, 2, L"\n");
+				}
+			}
+		}
+		message += notExportedNumbers;
+		ProUIMessageDialogDisplay(PROUIMESSAGE_WARNING, (wchar_t*)L"Błędy", (wchar_t*)message.c_str(), buttons, PRO_UI_MESSAGE_OK, &userChoice);
 	}
 }
