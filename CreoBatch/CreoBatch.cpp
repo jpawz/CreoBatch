@@ -17,6 +17,7 @@ Actions:
 #include <ProUtil.h>
 #include <ProWindows.h>
 #include <ProWstring.h>
+#include <ProWTUtils.h>
 #include <ProPDF.h>
 #include <vector>
 
@@ -31,6 +32,7 @@ void cancelAction(char*, char*, ProAppData);
 void exportToPdfAction(char*, char*, ProAppData);
 void exportToDxfAction(char*, char*, ProAppData);
 void exportToDwgAction(char*, char*, ProAppData);
+void getAllDrwFromWorkspaceAction(char*, char*, ProAppData);
 void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
 void summary(bool);
@@ -42,6 +44,7 @@ char cancel[] = { "Cancel" };
 char exportToPdf[] = { "Eksport do PDF" };
 char exportToDxf[] = { "Eksport do DXF" };
 char exportToDwg[] = { "Eksport do DWG" };
+char getAllDrw[] = { "<- *.drw z workspace" };
 char textArea[] = { "TextArea" };
 
 vector<wchar_t*> numbers;
@@ -118,20 +121,30 @@ void makeDialogWindow()
 	ProUIDialogSeparatorAdd(dialogName, separator, &gridOpts);
 
 	gridOpts.row = 3;
+	ProUIDialogPushbuttonAdd(dialogName, getAllDrw, &gridOpts);
+	ProStringToWstring(label[0], getAllDrw);
+	ProUIPushbuttonTextSet(dialogName, getAllDrw, label[0]);
+	ProUIPushbuttonActivateActionSet(dialogName, getAllDrw, getAllDrwFromWorkspaceAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, getAllDrw, (wchar_t*)L"wkleja wszyskie numery rysunków z worksapce");
+
+	gridOpts.row = 4;
+	ProUIDialogSeparatorAdd(dialogName, separator, &gridOpts);
+
+	gridOpts.row = 5;
 	ProUIDialogPushbuttonAdd(dialogName, exportToPdf, &gridOpts);
 	ProStringToWstring(label[0], exportToPdf);
 	ProUIPushbuttonTextSet(dialogName, exportToPdf, label[0]);
 	ProUIPushbuttonActivateActionSet(dialogName, exportToPdf, exportToPdfAction, NULL);
 	ProUIPushbuttonHelptextSet(dialogName, exportToPdf, (wchar_t*)L"zapisze rysunki do plikow PDF w katalogu roboczym");
 
-	gridOpts.row = 4;
+	gridOpts.row = 6;
 	ProUIDialogPushbuttonAdd(dialogName, exportToDxf, &gridOpts);
 	ProStringToWstring(label[0], exportToDxf);
 	ProUIPushbuttonTextSet(dialogName, exportToDxf, label[0]);
 	ProUIPushbuttonActivateActionSet(dialogName, exportToDxf, exportToDxfAction, NULL);
 	ProUIPushbuttonHelptextSet(dialogName, exportToDxf, (wchar_t*)L"zapisze rysunki do plikow DXF w katalogu roboczym");
 
-	gridOpts.row = 5;
+	gridOpts.row = 7;
 	ProUIDialogPushbuttonAdd(dialogName, exportToDwg, &gridOpts);
 	ProStringToWstring(label[0], exportToDwg);
 	ProUIPushbuttonTextSet(dialogName, exportToDwg, label[0]);
@@ -158,10 +171,40 @@ void cancelAction(char* dialog, char* component, ProAppData data)
 	ProUIDialogExit(dialog, 0);
 }
 
+void getAllDrwFromWorkspaceAction(char* dialog, char* component, ProAppData data)
+{
+	wchar_t* workspace;
+	wchar_t* alias;
+	ProServerActiveGet(&alias);
+	ProServerWorkspaceGet(alias, &workspace);
+	wstring workspacePath = L"wtws://";
+	workspacePath.append(alias);
+	workspacePath.append(L"/");
+	workspacePath.append(workspace);
+
+	ProPath* fileList, * dirList;
+	ProArrayAlloc(0, sizeof(ProPath), 1, (ProArray*)&fileList);
+	ProArrayAlloc(0, sizeof(ProPath), 1, (ProArray*)&dirList);
+	ProFilesList((wchar_t*)workspacePath.c_str(), (wchar_t*)L"*.drw", PRO_FILE_LIST_LATEST_SORTED, &fileList, &dirList);
+
+	int nFiles;
+	ProArraySizeGet((ProArray)fileList, &nFiles);
+	wstring drwFiles;
+	for (int i = 0; i < nFiles; i++)
+	{
+		wstring line(fileList[i]);
+		size_t pos = line.find_last_of(L'/');
+		drwFiles.append(fileList[i], pos + 1, wstring::npos);
+		drwFiles.append(L"\n");
+	}
+
+	ProUITextareaValueSet(dialogName, textArea, (wchar_t*)drwFiles.c_str());
+}
+
 void exportToPdfAction(char* dialog, char* component, ProAppData data)
 {
 	parseTextArea();
-	
+
 	success = true;
 	ProError err = PRO_TK_NO_ERROR;
 	int newWindowId;
@@ -171,14 +214,13 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 	ProMdl drawingToExport = NULL;
 	ProPDFOptions pdfOptions;
 
-
 	ProPDFoptionsAlloc(&pdfOptions);
 	ProPDFoptionsIntpropertySet(pdfOptions, PRO_PDFOPT_COLOR_DEPTH, PRO_PDF_CD_MONO);
 	ProPDFoptionsBoolpropertySet(pdfOptions, PRO_PDFOPT_LAUNCH_VIEWER, PRO_B_FALSE);
 	ProUIDialogExit(dialogName, 0);
 
 	ProWindowCurrentGet(&oldWindowId);
-	
+
 	notExportedNumbers.clear();
 
 	for (int i = 0; i < numbers.size(); i++)
@@ -204,7 +246,7 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 		ProWindowCurrentClose();
 		ProMdlErase(drawingToExport);
 	}
-	
+
 	ProPDFoptionsFree(pdfOptions);
 	ProWindowActivate(oldWindowId);
 
@@ -257,7 +299,7 @@ void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 	ProError err = PRO_TK_NO_ERROR;
 	ProPath filenameWithPath;
 	ProMdl drawingToExport = NULL;
-	
+
 	notExportedNumbers.clear();
 
 	for (int i = 0; i < numbers.size(); i++)
