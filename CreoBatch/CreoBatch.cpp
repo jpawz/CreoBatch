@@ -7,6 +7,7 @@ Actions:
  */
 
 #include <ProCore.h>
+#include <ProDrawing.h>
 #include <ProMenuBar.h>
 #include <ProMessage.h>
 #include <ProUICmd.h>
@@ -315,9 +316,27 @@ void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 			notExportedNumbers += L", ";
 			continue;
 		}
-		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
-		ProWstringConcatenate(extension, filenameWithPath, 4);
-		Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
+
+		int sheets = 0;
+		wchar_t num[] = { '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+		wchar_t underscore = L'_';
+		ProDrawingSheetsCount((ProDrawing)drawingToExport, &sheets);
+		if (sheets > 1) {
+			for (int j = 0; j < sheets; j++) {
+				ProDrawingCurrentSheetSet((ProDrawing)drawingToExport, j + 1);
+				ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
+				ProWstringConcatenate(&underscore, filenameWithPath, 1);
+				ProWstringConcatenate(&num[j], filenameWithPath, 1);
+				ProWstringConcatenate(extension, filenameWithPath, 4);
+				Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
+				ProDirectoryCurrentGet(filenameWithPath);
+			}
+		}
+		else {
+			ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
+			ProWstringConcatenate(extension, filenameWithPath, 4);
+			Pro2dExport(importExportFile, filenameWithPath, drawingToExport, NULL);
+		}
 		ProMdlErase(drawingToExport);
 	}
 	summary(success);
