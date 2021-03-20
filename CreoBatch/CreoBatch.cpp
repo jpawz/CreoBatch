@@ -8,6 +8,7 @@ Actions:
 
 #include <ProCore.h>
 #include <ProDrawing.h>
+#include <ProIntf3Dexport.h>
 #include <ProMenuBar.h>
 #include <ProMessage.h>
 #include <ProUICmd.h>
@@ -33,6 +34,7 @@ void cancelAction(char*, char*, ProAppData);
 void exportToPdfAction(char*, char*, ProAppData);
 void exportToDxfAction(char*, char*, ProAppData);
 void exportToDwgAction(char*, char*, ProAppData);
+void exportToStpAction(char*, char*, ProAppData);
 void getAllDrwFromWorkspaceAction(char*, char*, ProAppData);
 void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
@@ -45,6 +47,7 @@ char cancel[] = { "Cancel" };
 char exportToPdf[] = { "Eksport do PDF" };
 char exportToDxf[] = { "Eksport do DXF" };
 char exportToDwg[] = { "Eksport do DWG" };
+char exportToStp[] = { "Eksport do STP" };
 char getAllDrw[] = { "<- *.drw z workspace" };
 char textArea[] = { "TextArea" };
 
@@ -146,11 +149,11 @@ void makeDialogWindow()
 	ProUIPushbuttonHelptextSet(dialogName, exportToDxf, (wchar_t*)L"zapisze rysunki do plikow DXF w katalogu roboczym");
 
 	gridOpts.row = 7;
-	ProUIDialogPushbuttonAdd(dialogName, exportToDwg, &gridOpts);
-	ProStringToWstring(label[0], exportToDwg);
-	ProUIPushbuttonTextSet(dialogName, exportToDwg, label[0]);
-	ProUIPushbuttonActivateActionSet(dialogName, exportToDwg, exportToDwgAction, NULL);
-	ProUIPushbuttonHelptextSet(dialogName, exportToDwg, (wchar_t*)L"zapisze rysunki do plikow DWG w katalogu roboczym");
+	ProUIDialogPushbuttonAdd(dialogName, exportToStp, &gridOpts);
+	ProStringToWstring(label[0], exportToStp);
+	ProUIPushbuttonTextSet(dialogName, exportToStp, label[0]);
+	ProUIPushbuttonActivateActionSet(dialogName, exportToStp, exportToStpAction, NULL);
+	ProUIPushbuttonHelptextSet(dialogName, exportToStp, (wchar_t*)L"zapisze modele do plikow STP w katalogu roboczym");
 
 	ProUIDialogActivate(dialogName, &exit_status);
 	ProUIDialogDestroy(dialogName);
@@ -244,7 +247,7 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
 		ProWstringConcatenate((wchar_t*)L".pdf", filenameWithPath, 4);
 		ProPDFExport(drawingToExport, filenameWithPath, pdfOptions);
-		ProWindowCurrentClose();
+		//ProWindowCurrentClose();
 		ProMdlErase(drawingToExport);
 	}
 
@@ -266,6 +269,69 @@ void exportToDwgAction(char* dialog, char* component, ProAppData data)
 	parseTextArea();
 
 	export2dDrawing(PRO_DWG_FILE, (wchar_t*)L".dwg");
+}
+
+void exportToStpAction(char* dialog, char* component, ProAppData data)
+{
+	parseTextArea();
+
+	success = true;
+	ProError err = PRO_TK_NO_ERROR;
+	ProPath filenameWithPath;
+	ProMdl modelToExport = NULL;
+
+	ProOutputBrepRepresentation brep_flags;
+	ProOutputInclusion inclusion;
+	ProOutputLayerOptions layer_options;
+
+	ProOutputBrepRepresentationAlloc(&brep_flags);
+	ProOutputBrepRepresentationFlagsSet(brep_flags,
+		PRO_B_FALSE,
+		PRO_B_TRUE,
+		PRO_B_FALSE,
+		PRO_B_FALSE);
+
+	ProOutputInclusionAlloc(&inclusion);
+	ProOutputInclusionFlagsSet(inclusion,
+		PRO_B_TRUE,
+		PRO_B_FALSE,
+		PRO_B_FALSE);
+
+	ProOutputLayerOptionsAlloc(&layer_options);
+	ProOutputLayerOptionsAutoidSet(layer_options, PRO_B_TRUE);
+
+	notExportedNumbers.clear();
+
+	for (int i = 0; i < numbers.size(); i++)
+	{
+		int numLen = 0;
+		ProWstringLengthGet(numbers[i], &numLen);
+
+		ProDirectoryCurrentGet(filenameWithPath);
+		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
+		ProWstringConcatenate((wchar_t*)L".stp", filenameWithPath, 4);
+
+		err = ProMdlRetrieve(numbers[i], PRO_MDL_PART, &modelToExport);
+		if (err == PRO_TK_NO_ERROR)
+		{
+			ProIntf3DFileWrite((ProPart)modelToExport, PRO_INTF_EXPORT_STEP, filenameWithPath, PRO_OUTPUT_ASSEMBLY_SINGLE_FILE, NULL, brep_flags, inclusion, layer_options);
+			ProMdlErase(modelToExport);
+			continue;
+		}
+
+		err = ProMdlRetrieve(numbers[i], PRO_MDL_ASSEMBLY, &modelToExport);
+		if (err == PRO_TK_NO_ERROR)
+		{
+			ProIntf3DFileWrite((ProAssembly)modelToExport, PRO_INTF_EXPORT_STEP, filenameWithPath, PRO_OUTPUT_ASSEMBLY_SINGLE_FILE, NULL, brep_flags, inclusion, layer_options);
+			ProMdlErase(modelToExport);
+			continue;
+		}
+
+		success = false;
+		notExportedNumbers += numbers[i];
+		notExportedNumbers += L", ";
+	}
+	summary(success);
 }
 
 void parseTextArea()
