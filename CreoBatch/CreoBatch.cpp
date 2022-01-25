@@ -10,13 +10,10 @@ Actions:
 #include <ProDrawing.h>
 #include <ProIntf3Dexport.h>
 #include <ProMenuBar.h>
-#include <ProMessage.h>
-#include <ProUICmd.h>
 #include <ProUIDialog.h>
 #include <ProUIMessage.h>
 #include <ProUIPushbutton.h>
 #include <ProUITextarea.h>
-#include <ProUtil.h>
 #include <ProWindows.h>
 #include <ProWstring.h>
 #include <ProWTUtils.h>
@@ -39,6 +36,7 @@ void getAllDrwFromWorkspaceAction(char*, char*, ProAppData);
 void export2dDrawing(ProImportExportFile, wchar_t*);
 void textAction(char*, char*, ProAppData);
 void summary(bool);
+bool fileExported(wchar_t*);
 
 ProFileName msgFile;
 char dialogName[] = { "creobatch" };
@@ -239,22 +237,30 @@ void exportToPdfAction(char* dialog, char* component, ProAppData data)
 			notExportedNumbers += L", ";
 			continue;
 		}
-		ProMdlNameGet(drawingToExport, drwName);
-		ProObjectwindowCreate(drwName, PRO_DRAWING, &newWindowId);
-		ProWindowCurrentSet(newWindowId);
-		ProWindowActivate(newWindowId);
-		ProWstringLengthGet(numbers[i], &numLen);
-		ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
-		ProWstringConcatenate((wchar_t*)L".pdf", filenameWithPath, 4);
-		ProPDFExport(drawingToExport, filenameWithPath, pdfOptions);
-		//ProWindowCurrentClose();
-		ProMdlErase(drawingToExport);
+		int numberOfAttempts = 0;
+		do {
+			numberOfAttempts++;
+			ProMdlNameGet(drawingToExport, drwName);
+			ProObjectwindowCreate(drwName, PRO_DRAWING, &newWindowId);
+			ProWindowCurrentSet(newWindowId);
+			ProWindowActivate(newWindowId);
+			ProWstringLengthGet(numbers[i], &numLen);
+			ProWstringConcatenate(numbers[i], filenameWithPath, numLen);
+			ProWstringConcatenate((wchar_t*)L".pdf", filenameWithPath, 4);
+			ProPDFExport(drawingToExport, filenameWithPath, pdfOptions);
+			ProMdlErase(drawingToExport);
+		} while (!fileExported(filenameWithPath) || numberOfAttempts == 3);
 	}
 
 	ProPDFoptionsFree(pdfOptions);
 	ProWindowActivate(oldWindowId);
 
 	summary(success);
+}
+
+bool fileExported(wchar_t* name)
+{
+	return (_waccess(name, 0) != -1);
 }
 
 void exportToDxfAction(char* dialog, char* component, ProAppData data)
@@ -384,7 +390,7 @@ void export2dDrawing(ProImportExportFile importExportFile, wchar_t* extension)
 		}
 
 		int sheets = 0;
-		wchar_t num[] = { '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+		wchar_t num[] = { '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 		wchar_t underscore = L'_';
 		ProDrawingSheetsCount((ProDrawing)drawingToExport, &sheets);
 		if (sheets > 1) {
